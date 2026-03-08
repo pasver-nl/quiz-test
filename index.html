@@ -132,6 +132,8 @@
   .btn-finish:hover { background: #1e5c39; }
   .btn-secondary { background: var(--gray); color: var(--text); }
   .btn-secondary:hover { background: var(--border); }
+  .btn-hint { background: var(--orange-light); color: #9a5c1a; border: 1.5px solid #f5c99a; }
+  .btn-hint:hover { background: #fde8d0; }
   .answer-feedback { display: none; align-items: center; gap: 8px; font-size: .88rem; font-weight: 600; padding: 8px 14px; border-radius: 8px; }
   .answer-feedback.correct { display: flex; color: var(--green); background: var(--green-light); }
   .answer-feedback.wrong { display: flex; color: var(--red); background: var(--red-light); }
@@ -229,7 +231,8 @@
       <div id="questionBody"></div>
       <div class="action-bar">
         <div class="answer-feedback" id="feedbackMsg"></div>
-        <div style="display:flex;gap:10px;margin-left:auto">
+        <div style="display:flex;gap:10px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end;">
+          <button class="btn btn-hint" id="btnHint" onclick="showCorrectAnswer()" style="display:none">💡 Toon juist antwoord</button>
           <button class="btn btn-secondary" id="btnSkip" onclick="skipQuestion()">Overslaan</button>
           <button class="btn btn-confirm" id="btnConfirm" onclick="confirmAnswer()" disabled>Controleer</button>
           <button class="btn btn-next" id="btnNext" onclick="nextQuestion()" style="display:none">Volgende →</button>
@@ -520,10 +523,14 @@ function updateButtons(q, ans, confirmed) {
   const btnNext = document.getElementById('btnNext');
   const btnFinish = document.getElementById('btnFinish');
   const btnSkip = document.getElementById('btnSkip');
+  const btnHint = document.getElementById('btnHint');
 
   if (confirmed) {
     btnConfirm.style.display = 'none';
     btnSkip.style.display = 'none';
+    // Show hint button only when wrong and not yet revealed
+    btnHint.style.display = (!ans.isCorrect && !ans.showCorrect) ? 'inline-flex' : 'none';
+
     const allAnswered = QUESTIONS.every(q2 => answers[q2.id]?.confirmed);
     const hasNext = current < QUESTIONS.length - 1;
 
@@ -546,6 +553,7 @@ function updateButtons(q, ans, confirmed) {
     btnSkip.style.display = 'inline-flex';
     btnNext.style.display = 'none';
     btnFinish.style.display = 'none';
+    btnHint.style.display = 'none';
     btnConfirm.disabled = !hasValidAnswer(q, ans);
   }
 }
@@ -577,6 +585,7 @@ function renderSingleMulti(q, ans, confirmed, container, isMulti) {
 
   const selected = ans.selected || new Set();
   const displayOrder = optionOrders[q.id];
+  const showCorrect = ans.showCorrect || false;
   const list = document.createElement('div');
   list.className = 'options' + (isMulti ? ' multi' : '');
 
@@ -587,10 +596,14 @@ function renderSingleMulti(q, ans, confirmed, container, isMulti) {
 
     if (confirmed) {
       div.classList.add('disabled');
-      if (q.correct.includes(origIdx)) {
-        div.classList.add(selected.has(dispIdx) ? 'correct' : 'correct-missed');
-      } else if (selected.has(dispIdx)) {
+      const isCorrectOpt = q.correct.includes(origIdx);
+      const wasSelected = selected.has(dispIdx);
+      if (isCorrectOpt && wasSelected) {
+        div.classList.add('correct');
+      } else if (!isCorrectOpt && wasSelected) {
         div.classList.add('wrong');
+      } else if (isCorrectOpt && showCorrect) {
+        div.classList.add('correct-missed');
       }
     } else if (selected.has(dispIdx)) {
       div.classList.add('selected');
@@ -640,7 +653,12 @@ function renderOrder(q, ans, confirmed, container) {
       item.classList.add('disabled');
       const correctPos = q.items.indexOf(text);
       const isCorrectPos = correctPos === dispIdx;
-      item.classList.add(isCorrectPos ? 'correct-item' : 'wrong-item');
+      if (ans.isCorrect || ans.showCorrect) {
+        item.classList.add(isCorrectPos ? 'correct-item' : 'wrong-item');
+      } else {
+        // wrong but not revealed: just show neutral disabled
+        item.classList.add(isCorrectPos ? 'correct-item' : '');
+      }
     }
 
     const numEl = document.createElement('div');
@@ -669,7 +687,7 @@ function renderOrder(q, ans, confirmed, container) {
     textEl.textContent = text;
     item.appendChild(textEl);
 
-    if (confirmed) {
+    if (confirmed && (ans.isCorrect || ans.showCorrect)) {
       const correctPos = q.items.indexOf(text);
       const isCorrectPos = correctPos === dispIdx;
       if (!isCorrectPos) {
@@ -846,10 +864,10 @@ function renderMatch(q, ans, confirmed, container) {
       const correctText = q.right[q.pairs[leftIdx]];
       const isCorrect = userMatch[leftIdx] === correctText;
       sel.classList.add(isCorrect ? 'correct' : 'wrong');
-      if (!isCorrect) {
+      if (!isCorrect && ans.showCorrect) {
         // show correct answer
         const correctHint = document.createElement('div');
-        correctHint.style.cssText = 'font-size:.78rem;color:var(--green);margin-left:4px;';
+        correctHint.style.cssText = 'font-size:.78rem;color:var(--green);margin-left:4px;white-space:nowrap;';
         correctHint.textContent = '✓ ' + correctText;
         row.appendChild(leftEl);
         row.appendChild(arrow);
@@ -950,7 +968,7 @@ function renderDropdown(q, ans, confirmed, container) {
       sentDiv.appendChild(after);
     }
 
-    if (confirmed && userDD[sIdx] !== correctText) {
+    if (confirmed && userDD[sIdx] !== correctText && ans.showCorrect) {
       const hint = document.createElement('span');
       hint.style.cssText = 'color:var(--green);font-size:.82rem;font-weight:600;margin-left:4px;';
       hint.textContent = '✓ ' + correctText;
@@ -1000,7 +1018,14 @@ function confirmAnswer() {
   renderNavDots();
 }
 
-// ─── NAVIGATION ──────────────────────────────────────────────────────────────
+// ─── SHOW CORRECT ANSWER ─────────────────────────────────────────────────────
+function showCorrectAnswer() {
+  const q = getQ();
+  if (answers[q.id]) {
+    answers[q.id].showCorrect = true;
+  }
+  renderQuestion();
+}
 function skipQuestion() { nextQuestion(); }
 
 function nextQuestion() {
