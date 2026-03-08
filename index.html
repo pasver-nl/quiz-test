@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Quiz">
+<meta name="theme-color" content="#0f2235">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%230f2235'/%3E%3Ctext x='96' y='130' font-size='110' text-anchor='middle'%3E%F0%9F%8F%83%3C/text%3E%3C/svg%3E">
+<title>Quiz – Sport & Gezondheid</title>
+<style>
+  :root {
+    --navy: #0f2235;
+    --green: #2d7a4f;
+    --green-light: #e8f5ee;
+    --green-border: #5aad7e;
+    --red: #c0392b;
+    --red-light: #fdecea;
+    --red-border: #e57373;
+    --orange: #e8793a;
+    --orange-light: #fff3ec;
+    --gray: #f2f4f7;
+    --border: #dde2ea;
+    --text: #1a2e40;
+    --muted: #6b7a8d;
+    --white: #ffffff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f3f8; min-height: 100vh; color: var(--text); }
+
+  header {
+    background: var(--navy); color: white; padding: 0 32px; height: 64px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,.2);
+  }
+  header h1 { font-family: Georgia, 'Times New Roman', serif; font-size: 1.25rem; }
+  .header-meta { font-size: .85rem; color: rgba(255,255,255,.6); }
+  .progress-bar-wrap { position: sticky; top: 64px; z-index: 99; height: 4px; background: rgba(0,0,0,.1); }
+  .progress-bar { height: 100%; background: var(--orange); transition: width .4s ease; }
+
+  .container { max-width: 780px; margin: 0 auto; padding: 40px 20px 80px; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── Start ── */
+  .start-card { background: var(--white); border-radius: 20px; padding: 56px 48px; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,.07); }
+  .start-card .emoji { font-size: 3rem; margin-bottom: 20px; }
+  .start-card h2 { font-family: Georgia, 'Times New Roman', serif; font-size: 2rem; color: var(--navy); margin-bottom: 12px; }
+  .start-card p { color: var(--muted); font-size: 1rem; line-height: 1.6; margin-bottom: 36px; max-width: 440px; margin-left: auto; margin-right: auto; }
+  .btn-start { background: var(--navy); color: white; border: none; border-radius: 12px; padding: 16px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background .2s, transform .1s; }
+  .btn-start:hover { background: #1a3a5c; transform: translateY(-1px); }
+
+  /* ── Question card ── */
+  .question-card { background: var(--white); border-radius: 20px; padding: 40px 40px 32px; box-shadow: 0 4px 24px rgba(0,0,0,.07); margin-bottom: 24px; animation: fadeIn .25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity:1; transform:none; } }
+  .question-badge { display: inline-flex; align-items: center; gap: 8px; background: var(--gray); border-radius: 100px; padding: 5px 14px 5px 5px; margin-bottom: 20px; }
+  .question-num { background: var(--navy); color: white; border-radius: 100px; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: .82rem; font-weight: 700; }
+  .question-badge span { font-size: .82rem; color: var(--muted); font-weight: 500; }
+  .question-label { display: inline-flex; align-items: center; gap: 6px; background: var(--orange-light); border: 1px solid #f5c99a; color: #9a5c1a; border-radius: 6px; padding: 4px 10px; font-size: .78rem; font-weight: 600; margin-bottom: 14px; }
+  .question-text { font-size: 1.1rem; font-weight: 600; color: var(--navy); line-height: 1.55; margin-bottom: 24px; }
+
+  /* ── Single / Multi ── */
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .option { display: flex; align-items: center; gap: 14px; border: 2px solid var(--border); border-radius: 12px; padding: 14px 18px; cursor: pointer; transition: all .18s; background: var(--white); user-select: none; }
+  .option:hover:not(.disabled) { border-color: #a8c4d4; background: #f7fafc; transform: translateX(2px); }
+  .option.selected { border-color: var(--navy); background: #eef3f9; }
+  .option.correct { border-color: var(--green-border); background: var(--green-light); }
+  .option.wrong { border-color: var(--red-border); background: var(--red-light); }
+  .option.correct-missed { border-color: var(--green-border); background: var(--green-light); opacity: .7; }
+  .option.disabled { cursor: default; }
+  .option-control { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .18s; }
+  .multi .option-control { border-radius: 6px; }
+  .option.selected .option-control, .option.correct .option-control { border-color: var(--green); background: var(--green); }
+  .option.wrong .option-control { border-color: var(--red); background: var(--red); }
+  .option-control svg { display: none; }
+  .option.selected .option-control svg, .option.correct .option-control svg, .option.wrong .option-control svg { display: block; }
+  .option-label { font-size: .97rem; line-height: 1.45; color: var(--text); flex: 1; }
+  .option.correct .option-label { color: var(--green); font-weight: 600; }
+  .option.wrong .option-label { color: var(--red); font-weight: 600; }
+
+  /* ── Order (drag) ── */
+  .order-list { display: flex; flex-direction: column; gap: 8px; }
+  .order-item { display: flex; align-items: center; gap: 12px; border: 2px solid var(--border); border-radius: 12px; padding: 12px 16px; background: var(--white); cursor: grab; user-select: none; transition: all .18s; }
+  .order-item:hover { border-color: #a8c4d4; }
+  .order-item.dragging { opacity: .4; border-style: dashed; }
+  .order-item.drag-over { border-color: var(--orange); background: var(--orange-light); }
+  .order-item.disabled { cursor: default; }
+  .order-item.correct-item { border-color: var(--green-border); background: var(--green-light); }
+  .order-item.wrong-item { border-color: var(--red-border); background: var(--red-light); }
+  .order-num { width: 28px; height: 28px; border-radius: 8px; background: var(--gray); color: var(--muted); font-size: .82rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .order-item.correct-item .order-num { background: var(--green); color: white; }
+  .order-item.wrong-item .order-num { background: var(--red); color: white; }
+  .order-handle { color: var(--border); font-size: 1.1rem; flex-shrink: 0; }
+  .order-text { flex: 1; font-size: .95rem; line-height: 1.4; }
+  .order-correct-label { font-size: .75rem; color: var(--green); font-weight: 600; margin-left: auto; }
+  .order-wrong-label { font-size: .75rem; color: var(--red); font-weight: 600; margin-left: auto; }
+
+  /* ── Match ── */
+  .match-list { display: flex; flex-direction: column; gap: 10px; }
+  .match-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--gray); }
+  .match-row:last-child { border-bottom: none; }
+  .match-left { font-size: .95rem; font-weight: 600; color: var(--navy); flex: 1; min-width: 160px; }
+  .match-arrow { color: var(--muted); font-size: 1.2rem; flex-shrink: 0; }
+  .match-select { flex: 1; padding: 10px 12px; border: 2px solid var(--border); border-radius: 10px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: .93rem; background: var(--white); color: var(--text); cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7a8d' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 30px; transition: border-color .18s; }
+  .match-select:focus { outline: none; border-color: var(--navy); }
+  .match-select.correct { border-color: var(--green-border); background-color: var(--green-light); color: var(--green); font-weight: 600; }
+  .match-select.wrong { border-color: var(--red-border); background-color: var(--red-light); color: var(--red); }
+  .match-select:disabled { cursor: default; opacity: 1; }
+
+  /* ── Dropdown (inline) ── */
+  .dropdown-block { background: var(--gray); border-radius: 12px; padding: 20px 24px; }
+  .dropdown-sentence { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: .97rem; line-height: 1.8; margin-bottom: 12px; }
+  .dropdown-sentence:last-child { margin-bottom: 0; }
+  .dropdown-label { font-weight: 700; color: var(--navy); margin-right: 4px; flex-shrink: 0; }
+  .inline-select { padding: 6px 28px 6px 10px; border: 2px solid var(--border); border-radius: 8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: .93rem; background: var(--white); color: var(--text); cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7a8d' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; transition: border-color .18s; }
+  .inline-select:focus { outline: none; border-color: var(--navy); }
+  .inline-select.correct { border-color: var(--green-border); background-color: var(--green-light); color: var(--green); font-weight: 600; }
+  .inline-select.wrong { border-color: var(--red-border); background-color: var(--red-light); color: var(--red); }
+  .inline-select:disabled { cursor: default; opacity: 1; }
+
+  /* ── Action bar ── */
+  .action-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--border); }
+  .btn { border: none; border-radius: 10px; padding: 12px 26px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: .93rem; font-weight: 600; cursor: pointer; transition: all .18s; }
+  .btn-confirm { background: var(--navy); color: white; }
+  .btn-confirm:hover { background: #1a3a5c; }
+  .btn-confirm:disabled { background: #c5cdd8; cursor: not-allowed; }
+  .btn-next { background: var(--orange); color: white; }
+  .btn-next:hover { background: #d06a2c; }
+  .btn-finish { background: var(--green); color: white; }
+  .btn-finish:hover { background: #1e5c39; }
+  .btn-secondary { background: var(--gray); color: var(--text); }
+  .btn-secondary:hover { background: var(--border); }
+  .answer-feedback { display: none; align-items: center; gap: 8px; font-size: .88rem; font-weight: 600; padding: 8px 14px; border-radius: 8px; }
+  .answer-feedback.correct { display: flex; color: var(--green); background: var(--green-light); }
+  .answer-feedback.wrong { display: flex; color: var(--red); background: var(--red-light); }
+
+  /* ── Nav dots ── */
+  .nav-card { background: var(--white); border-radius: 16px; padding: 20px 24px; box-shadow: 0 2px 12px rgba(0,0,0,.05); }
+  .nav-card h3 { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 14px; font-weight: 600; }
+  .nav-dots { display: flex; flex-wrap: wrap; gap: 8px; }
+  .nav-dot { width: 36px; height: 36px; border-radius: 8px; border: 2px solid var(--border); background: var(--gray); font-size: .82rem; font-weight: 700; color: var(--muted); cursor: pointer; transition: all .18s; display: flex; align-items: center; justify-content: center; }
+  .nav-dot:hover { border-color: var(--navy); color: var(--navy); }
+  .nav-dot.current { border-color: var(--navy); background: var(--navy); color: white; }
+  .nav-dot.answered-correct { border-color: var(--green-border); background: var(--green-light); color: var(--green); }
+  .nav-dot.answered-wrong { border-color: var(--red-border); background: var(--red-light); color: var(--red); }
+  .nav-dot.answered-pending { border-color: #f5c99a; background: #fff8f3; color: #9a5c1a; }
+
+  /* ── Results ── */
+  .results-header { background: var(--white); border-radius: 20px; padding: 48px 40px; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,.07); margin-bottom: 24px; }
+  .score-ring { width: 120px; height: 120px; border-radius: 50%; background: conic-gradient(var(--green) calc(var(--pct) * 1%), var(--gray) 0); display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; position: relative; }
+  .score-ring::before { content: ''; position: absolute; inset: 12px; background: var(--white); border-radius: 50%; }
+  .score-ring-text { position: relative; z-index: 1; font-family: Georgia, 'Times New Roman', serif; font-size: 1.6rem; color: var(--navy); }
+  .results-header h2 { font-family: Georgia, 'Times New Roman', serif; font-size: 1.8rem; color: var(--navy); margin-bottom: 8px; }
+  .results-header p { color: var(--muted); font-size: .97rem; }
+  .stats-row { display: flex; justify-content: center; gap: 32px; margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--border); }
+  .stat { text-align: center; }
+  .stat-val { font-size: 1.8rem; font-weight: 700; }
+  .stat-val.correct { color: var(--green); }
+  .stat-val.wrong { color: var(--red); }
+  .stat-label { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
+  .results-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+  .result-item { background: var(--white); border-radius: 14px; padding: 18px 24px; box-shadow: 0 2px 8px rgba(0,0,0,.04); display: flex; align-items: flex-start; gap: 16px; cursor: pointer; transition: transform .15s, box-shadow .15s; border-left: 4px solid transparent; }
+  .result-item:hover { transform: translateX(3px); box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+  .result-item.correct-result { border-left-color: var(--green); }
+  .result-item.wrong-result { border-left-color: var(--red); }
+  .result-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1rem; }
+  .result-icon.c { background: var(--green-light); }
+  .result-icon.w { background: var(--red-light); }
+  .result-content { flex: 1; }
+  .result-qnum { font-size: .75rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+  .result-qtext { font-size: .93rem; font-weight: 600; color: var(--navy); margin: 3px 0 0; line-height: 1.4; }
+  .result-arrow { color: var(--muted); font-size: 1.1rem; align-self: center; }
+  .btn-restart { display: block; width: 100%; background: var(--navy); color: white; border: none; border-radius: 12px; padding: 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background .2s; text-align: center; }
+  .btn-restart:hover { background: #1a3a5c; }
+
+  @media (max-width: 600px) {
+    .question-card, .results-header { padding: 20px 16px; }
+    .start-card { padding: 36px 20px; }
+    .action-bar { flex-direction: column; gap: 10px; }
+    .action-bar > * { width: 100%; }
+    .action-bar > div { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+    .btn { width: 100%; text-align: center; }
+    .match-row { flex-wrap: wrap; gap: 8px; }
+    .match-left { min-width: 100%; }
+    .match-select { min-width: 100%; }
+    .stats-row { gap: 16px; }
+    .dropdown-sentence { font-size: .9rem; }
+    .inline-select { max-width: 100%; }
+    .nav-dots { gap: 6px; }
+    .nav-dot { width: 32px; height: 32px; font-size: .78rem; }
+    header { padding: 0 16px; }
+    .container { padding: 24px 12px 80px; }
+  }
+  /* iOS Safari fixes */
+  select { -webkit-appearance: none; font-size: 16px; } /* prevent zoom on focus */
+  input, button { -webkit-tap-highlight-color: transparent; }
+  .order-item { -webkit-user-select: none; user-select: none; touch-action: none; }
+  .option { -webkit-tap-highlight-color: rgba(0,0,0,0); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Sport &amp; Gezondheid</h1>
+  <span class="header-meta" id="headerMeta">41 vragen</span>
+</header>
+<div class="progress-bar-wrap"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
+
+<div class="container">
+  <div class="screen active" id="screenStart">
+    <div class="start-card">
+      <div class="emoji">🏃</div>
+      <h2>Quiz Sport &amp; Gezondheid</h2>
+      <p>Test je kennis uit alle lesbrieven. De vragen worden in willekeurige volgorde aangeboden, inclusief de antwoordopties. Je kunt altijd terug naar een eerdere vraag.</p>
+      <button class="btn-start" onclick="startQuiz()">Quiz starten</button>
+    </div>
+  </div>
+
+  <div class="screen" id="screenQuiz">
+    <div class="question-card" id="questionCard">
+      <div class="question-badge">
+        <div class="question-num" id="qNum">1</div>
+        <span id="qOf">van 41</span>
+      </div>
+      <div id="questionLabel"></div>
+      <div class="question-text" id="questionText"></div>
+      <div id="questionBody"></div>
+      <div class="action-bar">
+        <div class="answer-feedback" id="feedbackMsg"></div>
+        <div style="display:flex;gap:10px;margin-left:auto">
+          <button class="btn btn-secondary" id="btnSkip" onclick="skipQuestion()">Overslaan</button>
+          <button class="btn btn-confirm" id="btnConfirm" onclick="confirmAnswer()" disabled>Controleer</button>
+          <button class="btn btn-next" id="btnNext" onclick="nextQuestion()" style="display:none">Volgende →</button>
+          <button class="btn btn-finish" id="btnFinish" onclick="showResults()" style="display:none">Resultaten bekijken</button>
+        </div>
+      </div>
+    </div>
+    <div class="nav-card">
+      <h3>Navigeer naar vraag</h3>
+      <div class="nav-dots" id="navDots"></div>
+    </div>
+  </div>
+
+  <div class="screen" id="screenResults">
+    <div class="results-header">
+      <div class="score-ring" id="scoreRing"><div class="score-ring-text" id="scorePct">0%</div></div>
+      <h2 id="resultsTitle">Resultaat</h2>
+      <p id="resultsSubtitle"></p>
+      <div class="stats-row">
+        <div class="stat"><div class="stat-val correct" id="statCorrect">0</div><div class="stat-label">Goed</div></div>
+        <div class="stat"><div class="stat-val wrong" id="statWrong">0</div><div class="stat-label">Fout</div></div>
+        <div class="stat"><div class="stat-val" id="statTotal">41</div><div class="stat-label">Totaal</div></div>
+      </div>
+    </div>
+    <div class="results-list" id="resultsList"></div>
+    <button class="btn-restart" onclick="restartQuiz()">↺ Opnieuw proberen</button>
+  </div>
+</div>
+
+<script>
+// ─── QUESTION DATA ───────────────────────────────────────────────────────────
+const QUESTIONS = [
+  // ── Lesbrief 1 ──────────────────────────────────────────────────────────────
+  { id:1, lb:'Lesbrief 1', type:'single',
+    text:'Als je sport, gaat je hartslag \u2026',
+    options:['omhoog','omlaag'], correct:[0] },
+  { id:2, lb:'Lesbrief 1', type:'single',
+    text:'Wat betekent BMI?',
+    options:['Body Mass Index','Body Method Index','Body Mass Intention','Body Method Intention'], correct:[0] },
+  { id:3, lb:'Lesbrief 1', type:'single',
+    text:'Melkzuur wordt aangemaakt tijdens het sporten. Waar hoopt melkzuur zich op?',
+    options:['In je aders','In je spieren','In je vaten','In je zenuwen'], correct:[1] },
+  { id:4, lb:'Lesbrief 1', type:'multi',
+    text:'Wat zijn de gevolgen van het aanmaken van melkzuur?',
+    options:['Kramp','Spierstijfheid','Gevoelloosheid','Pijn','Vermoeid gevoel','Zwaar gevoel'], correct:[0,1,4,5] },
+  { id:5, lb:'Lesbrief 1', type:'single',
+    text:'Wat is heel belangrijk aan het begin van de les?',
+    options:['De cooling-down','De lesvoorbereiding','De warming-up'], correct:[2] },
+  { id:6, lb:'Lesbrief 1', type:'multi',
+    text:'Welke uitspraken gaan over dynamische rekoefeningen?',
+    options:['Maken je spieren en gewrichten los','Bijvoorbeeld: knieheffen, waarbij je je knie\u00ebn afwisselend omhoog tilt tijdens een rustige looppas','Zorgen voor meer lenigheid','Je brengt je spieren al \u2018verend\u2019 op lengte','Bijvoorbeeld: rekken van de spieren in de achterkant van je bovenbeen','Voorkomen ook geblesseerde pezen en spieren'], correct:[0,1,3] },
+  { id:7, lb:'Lesbrief 1', type:'single',
+    text:'Is een sportmedisch onderzoek noodzakelijk voordat je gaat sporten?',
+    options:['Ja','Nee'], correct:[0] },
+  { id:8, lb:'Lesbrief 1', type:'multi',
+    text:'Wie voert sportmedisch onderzoek uit?',
+    options:['Arts','Fysiotherapeut','Sportinstructeur','Tandarts','Trainer','Verpleegkundige'], correct:[0,5] },
+  { id:9, lb:'Lesbrief 1', type:'single',
+    text:'Bij sporten als autosport, zweefvliegen, sportduiken en boksen is een sportmedisch onderzoek:',
+    options:['vrijwillig','verplicht'], correct:[1] },
+  { id:10, lb:'Lesbrief 1', type:'single',
+    text:'Waarom is bewegen in de buitenlucht belangrijk?',
+    options:['Voor de aanmaak van vitamine A','Voor de aanmaak van vitamine B','Voor de aanmaak van vitamine C','Voor de aanmaak van vitamine D'], correct:[3] },
+  { id:11, lb:'Lesbrief 1', type:'multi',
+    text:'Voor welke doelgroepen is een warming-up het meest belangrijk?',
+    options:['Kinderen','Jongeren','Kleuters','Ouderen','Pubers','Volwassenen'], correct:[0,3,5] },
+  { id:12, lb:'Lesbrief 1', type:'multi',
+    text:'Waarom is het belangrijk dat kinderen al jong beginnen met sporten en bewegen?',
+    options:['Omdat de kinderen dan niet lui worden','Omdat de kinderen dan minder risico op overgewicht hebben','Omdat de kinderen dan niet vermaakt hoeven te worden door hun ouders','Omdat de kinderen tegenwoordig minder lichaamsbeweging hebben doordat ze minder buiten spelen','Omdat de kinderen dan meer fastfood kunnen eten','Omdat de kinderen dan gezond opgroeien en ook als volwassenen blijven sporten'], correct:[1,3,5] },
+  { id:13, lb:'Lesbrief 1', type:'single',
+    text:'James is 1,90 m lang. Vorig jaar had hij een BMI van 40. Omdat zijn BMI veel te hoog was, is hij veel gaan sporten. Zijn BMI is nu 30.\n\nHoeveel kilogram is James afgevallen afgelopen jaar?',
+    options:['18\u00a0kg','38\u00a0kg','26\u00a0kg','42\u00a0kg'], correct:[1] },
+  { id:14, lb:'Lesbrief 1', type:'multi',
+    text:'Welke onderdelen worden gedaan in een standaard sportmedisch onderzoek?',
+    options:['Inspanningstest','Longfunctietest','Meten van lengte, gewicht en vetpercentage','Electrocardiogram','Orthopedisch onderzoek','Urinetest'], correct:[2,4,5] },
+  { id:15, lb:'Lesbrief 1', type:'single',
+    text:'Een goede warming-up vermindert de kans op:',
+    options:['Spierpijn','Blessures','Gewrichtspijn','Overbelasting'], correct:[1] },
+
+  // ── Lesbrief 2 ──────────────────────────────────────────────────────────────
+  { id:16, lb:'Lesbrief 2', type:'single',
+    text:'Welke blessure komt het meest voor bij het zwemmen?',
+    options:['Polsblessure','Springersknie','Zweepslag','Zwemmersschouder'], correct:[3] },
+  { id:17, lb:'Lesbrief 2', type:'order',
+    text:'Hieronder staan enkele stappen die je moet uitvoeren om een vloer te moppen.\nZet de stappen in de juiste volgorde.',
+    items:['Wis de vloer en veeg het vuil op.','Maak de beide emmers gereed.','Dompel de mop in de rode emmer en pers uit.','Dompel de mop in de blauwe emmer en pers uit.','Mop de vloer.','Maak de rolemmercombinatie schoon.'] },
+  { id:18, lb:'Lesbrief 2', type:'match',
+    text:'Leon is 30 jaar. Welke hartslag mag Leon hebben bij welke trainingszone?\nVerbind de trainingszone links met de hartslagen rechts.',
+    left:['Aerobe zone','Anaerobe zone','Fitheidszone','Gewichtscontrole zone','Uitputtingszone'],
+    right:['131\u2013150','150\u2013168','112\u2013131','94\u2013112','168\u2013187'],
+    pairs:[0,1,2,3,4] },
+  { id:19, lb:'Lesbrief 2', type:'single',
+    text:'De maximale hartslag van Jamie is 160.\nWat mag haar hartslag zijn als ze traint in de fitheidszone?',
+    options:['80\u201396%','96\u2013112%','112\u2013128%','128\u2013144%'], correct:[1] },
+  { id:20, lb:'Lesbrief 2', type:'dropdown',
+    text:'Vul het juiste woord in.',
+    sentences:[
+      { before:'Beweging heeft een gunstig effect op je\u00a0', after:', want geregeld bewegen maakt je hart sterker.', options:['hersencellen','hart- en bloedvaten'], correct:1 }
+    ] },
+  { id:21, lb:'Lesbrief 2', type:'single',
+    text:'Wat is het percentage van de maximale hartslag tijdens het trainen in de aerobe zone?',
+    options:['50\u201360%','60\u201370%','70\u201380%','80\u201390%'], correct:[2] },
+  { id:22, lb:'Lesbrief 2', type:'single',
+    text:'Wat is het percentage van de maximale hartslag tijdens het trainen in de fitheidszone?',
+    options:['50\u201360%','60\u201370%','70\u201380%','80\u201390%'], correct:[1] },
+  { id:23, lb:'Lesbrief 2', type:'match',
+    text:'Verbind de trainingszone links aan de omschrijvingen rechts.',
+    left:['Aerobe zone','Anaerobe zone','Fitheidszone','Gewichtscontrole zone','Uitputtingszone'],
+    right:['Versterkt het hart en longen','Vergroot het vermogen melkzuur om te zetten in andere stoffen','Versterkt het hart','Meer vet dan koolhydraten verbranden','Voor specifieke doelen voor sporters op hoog niveau'],
+    pairs:[0,1,2,3,4] },
+  { id:24, lb:'Lesbrief 2', type:'dropdown',
+    text:'Welke woorden ontbreken er in de zinnen? Kies de juiste woorden.',
+    sentences:[
+      { label:'1.', before:'Een topsporter verbetert zijn sportprestatie\u00a0', after:'\u00a0een beginnende sporter.', options:['langzamer dan','even snel als','sneller dan'], correct:0 },
+      { label:'2.', before:'De wet van de verminderde meeropbrengst kun je vergelijken met het beklimmen van een berg. In het begin ben je fit en kun je\u00a0', after:'\u00a0lopen.', options:['langzaam','snel'], correct:1 },
+      { label:'3.', before:'Hoe langer je loopt, hoe vermoeider je wordt. Je gaat dan\u00a0', after:'\u00a0lopen.', options:['langzamer','sneller'], correct:0 }
+    ] },
+  { id:25, lb:'Lesbrief 2', type:'single',
+    text:'Een sporter verbetert zijn sportprestaties in het begin veel, daarna steeds langzamer.\nDit heet de wet van de \u2026',
+    options:['toenemende meeropbrengst','afnemende meeropbrengst','verminderde opbrengst','verminderde meeropbrengst'], correct:[3] },
+  { id:26, lb:'Lesbrief 2', type:'single',
+    text:'Hoe meer je beweegt, hoe beter je lichaam zuurstof opneemt. Waardoor komt dat?',
+    options:['Het hart pompt in rustig tempo het bloed door je lichaam.','Er wordt meer bloed rondgepompt dat zorgt voor de toevoer van zuurstof naar je spieren en organen.','Doordat de aders niet dichtslibben tijdens de beweging.','Als je meer beweegt krijg je schonere lucht binnen.'], correct:[1] },
+  { id:27, lb:'Lesbrief 2', type:'single',
+    text:'Fay is 20 jaar oud. Wat is haar maximale hartslag per minuut?',
+    options:['194','180','162','175'], correct:[0] },
+  { id:28, lb:'Lesbrief 2', type:'multi',
+    text:'In de zwemsport komen weinig blessures voor. Waardoor kunnen toch blessures ontstaan?',
+    options:['Overbelasting van spieren en gewrichten','Zwemmen met een volle maag','Foute techniek','In botsing komen met iemand anders','Sporten op onregelmatige tijden'], correct:[0,2,3] },
+  { id:29, lb:'Lesbrief 2', type:'dropdown',
+    text:'Kies de juiste woorden.',
+    sentences:[
+      { label:'1.', before:'Als je met senioren gaat sporten, is het belangrijk om rekening te houden met hun\u00a0', after:'.', options:['geslacht','lichamelijke conditie'], correct:1 },
+      { label:'2.', before:'De warming-up en de cooling-down zullen\u00a0', after:'\u00a0duren dan bij jonge mensen.', options:['langer','korter'], correct:0 },
+      { label:'3.', before:'Het is belangrijk hier wel de tijd voor te nemen. Dit om\u00a0', after:'\u00a0te voorkomen.', options:['blessures','kortademigheid'], correct:0 }
+    ] },
+
+  // ── Lesbrief 3 ──────────────────────────────────────────────────────────────
+  { id:30, lb:'Lesbrief 3', type:'single',
+    text:'Lees de omschrijving:\n\n\u2018Een overzicht dat aangeeft hoeveel tijd nodig is voor bepaalde werkzaamheden.\u2019\n\nWelk begrip hoort bij deze omschrijving?',
+    options:['Tijdschema','Tijdsduur','Tijdsplanning','Tijdstip'], correct:[2] },
+  { id:31, lb:'Lesbrief 3', type:'single',
+    text:'De Koningsspelen bestaan uit een Koningsontbijt en een Koningssportdag. Elke school kan een Koningsontbijt bestellen. Een school krijgt dan vouchers waarmee het ontbijt opgehaald kan worden bij een winkel. Voor \u00e9\u00e9n voucher krijgt een school \u00e9\u00e9n ontbijtdoos voor 25 personen en twee broden. Een school heeft 150 leerlingen.\n\nHoeveel vouchers moet de school inleveren om voldoende ontbijtdozen te ontvangen?',
+    options:['4','5','6','7'], correct:[2] },
+  { id:32, lb:'Lesbrief 3', type:'single',
+    text:'Twee leerlingen voeren een discussie. Ze houden zich niet goed aan de regels van het voeren van een discussie. Aan welke regel houden ze zich w\u00e9l?\n\nLeerling 1 wil groep 8 als doelgroep. Leerling 2 vindt dat minder leuk maar gaat toch akkoord.',
+    options:['Ze geven argumenten: ze leggen uit waarom ze iets vinden.','Ze laten elkaar uitpraten.','Ze vragen elkaar naar hun argumenten.','Ze zoeken samen naar een oplossing.'], correct:[0] },
+  { id:33, lb:'Lesbrief 3', type:'single',
+    text:'De kinderen op de afbeelding dragen geen persoonlijke beschermingsmiddelen, terwijl dat wel wordt geadviseerd bij beachvolleybal. Welk beschermingsmiddel dragen veel sporters die deze sport beoefenen?',
+    options:['Duimbrace','Kniebeschermers','Polsbeschermers','Scheenbeschermers'], correct:[1] },
+  { id:34, lb:'Lesbrief 3', type:'single',
+    text:'Op welke afbeelding staat een dynamische rekoefening?\n\nA: Groep mensen doet actieve been-swing oefeningen in een gymzaal\nB: Persoon doet statische rek bij een hek buiten\nC: Persoon doet statische rek zittend op het gras\nD: Groep doet krachtoefeningen op fitnessapparatuur',
+    options:['Afbeelding A','Afbeelding B','Afbeelding C','Afbeelding D'], correct:[0] },
+  { id:35, lb:'Lesbrief 3', type:'single',
+    text:'Je organiseert het volgende toernooi: je laat kinderen van 6\u20138 jaar kennismaken met volleybal. Je hebt 50 kinderen die je indeelt in verschillende groepen. Groep A speelt een wedstrijdje volleybal tegen groep B. Na 10 minuten draaien ze door en speelt groep A een wedstrijd tegen groep C. Zo gaat het door, tot alle groepen een wedstrijd tegen elkaar hebben gespeeld.\n\nHoe heet dit speelschema?',
+    options:['Knock-outschema','Pouleschema','Doordraaischema'], correct:[2] },
+  { id:36, lb:'Lesbrief 3', type:'single',
+    text:'Lees de volgende omschrijving:\n\n\u2018De nabespreking en/of beoordeling van iets.\u2019\n\nWelk begrip hoort bij deze omschrijving?',
+    options:['Argument','Discussie','Evaluatie','Feedback'], correct:[2] },
+  { id:37, lb:'Lesbrief 3', type:'dropdown',
+    text:'Welke woorden ontbreken er in de zinnen? Kies de juiste woorden.',
+    sentences:[
+      { label:'1.', before:'Een goede cooling-down duurt tussen de\u00a0', after:'\u00a0minuten.', options:['vijf en tien','tien en vijftien','vijftien en twintig'], correct:0 },
+      { label:'2.', before:'', after:'\u00a0rekoefeningen maken je spieren en gewrichten los.', options:['Statische','Dynamische'], correct:1 },
+      { label:'3.', before:'', after:'\u00a0rekoefeningen zorgen voor meer lenigheid.', options:['Statische','Dynamische'], correct:0 }
+    ] },
+  { id:38, lb:'Lesbrief 3', type:'dropdown',
+    text:'Vul het juiste woord in.',
+    sentences:[
+      { before:'Je ziet voetballers rennen en sprinten op het veld. Dit is een voorbeeld van een\u00a0', after:'\u00a0rekoefening.', options:['dynamische','statische'], correct:0 }
+    ] },
+  { id:39, lb:'Lesbrief 3', type:'single',
+    text:'Je ziet een speelschema met rondes en een finale in het midden, waarbij teams bij verlies worden uitgeschakeld. Welk speelschema zie je hier?',
+    options:['Knock-out schema','Doordraaischema','Pouleschema','Uitdaagschema'], correct:[0] },
+  { id:40, lb:'Lesbrief 3', type:'single',
+    text:'Voetbal is een goed voorbeeld van een:',
+    options:['uitdaagsysteem','roulatiesysteem','competitiesysteem','afvalsysteem'], correct:[2] },
+  { id:41, lb:'Lesbrief 3', type:'multi',
+    text:'Wat zijn goede voorbeelden van discussie voeren?',
+    options:['Naar een mening luisteren zonder de ander te onderbreken','Doorvragen als je iets niet begrijpt','Harder gaan praten','De ander vertellen wat hij of zij moet doen','Samen zoeken naar een oplossing'], correct:[0,1,4] }
+];
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+const SVG_CHECK = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+const SVG_CROSS = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let order = [];       // shuffled indices into QUESTIONS
+let current = 0;
+let answers = {};     // qId -> answer object (varies by type)
+let optionOrders = {}; // qId -> shuffled option indices (for single/multi)
+let orderDisplays = {}; // qId -> array of item texts in current display order
+let matchOrders = {};  // qId -> shuffled right item indices
+let fromResults = false;
+let dragSrcIdx = null;
+
+// ─── QUIZ INIT ───────────────────────────────────────────────────────────────
+function startQuiz() {
+  order = shuffle(QUESTIONS.map((_, i) => i));
+  answers = {};
+  optionOrders = {};
+  orderDisplays = {};
+  matchOrders = {};
+
+  QUESTIONS.forEach(q => {
+    if (q.type === 'single' || q.type === 'multi') {
+      optionOrders[q.id] = shuffle(q.options.map((_, i) => i));
+    }
+    if (q.type === 'order') {
+      orderDisplays[q.id] = shuffle([...q.items]);
+    }
+    if (q.type === 'match') {
+      matchOrders[q.id] = shuffle(q.right.map((_, i) => i));
+    }
+  });
+
+  current = 0;
+  fromResults = false;
+  show('screenQuiz');
+  renderQuestion();
+  renderNavDots();
+  updateProgress();
+}
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function getQ() { return QUESTIONS[order[current]]; }
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+function renderQuestion() {
+  const q = getQ();
+  const ans = answers[q.id] || {};
+  const confirmed = ans.confirmed || false;
+
+  // Badge
+  document.getElementById('qNum').textContent = current + 1;
+  document.getElementById('qOf').textContent = `van ${QUESTIONS.length}`;
+  document.getElementById('headerMeta').textContent = `Vraag ${current + 1} / ${QUESTIONS.length}`;
+
+  // Lesbrief label
+  const lbl = document.getElementById('questionLabel');
+  lbl.innerHTML = `<div class="question-label">📚 ${q.lb}</div>`;
+
+  // Question text
+  document.getElementById('questionText').innerHTML = q.text.replace(/\n/g, '<br>');
+
+  // Body
+  const body = document.getElementById('questionBody');
+  body.innerHTML = '';
+
+  if (q.type === 'single') renderSingleMulti(q, ans, confirmed, body, false);
+  else if (q.type === 'multi') renderSingleMulti(q, ans, confirmed, body, true);
+  else if (q.type === 'order') renderOrder(q, ans, confirmed, body);
+  else if (q.type === 'match') renderMatch(q, ans, confirmed, body);
+  else if (q.type === 'dropdown') renderDropdown(q, ans, confirmed, body);
+
+  // Buttons
+  updateButtons(q, ans, confirmed);
+
+  // Feedback
+  const feedback = document.getElementById('feedbackMsg');
+  if (confirmed) {
+    feedback.className = 'answer-feedback ' + (ans.isCorrect ? 'correct' : 'wrong');
+    feedback.textContent = ans.isCorrect ? '✓ Correct!' : '✗ Niet helemaal goed';
+  } else {
+    feedback.className = 'answer-feedback';
+  }
+
+  renderNavDots();
+  updateProgress();
+  document.getElementById('questionCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function updateButtons(q, ans, confirmed) {
+  const btnConfirm = document.getElementById('btnConfirm');
+  const btnNext = document.getElementById('btnNext');
+  const btnFinish = document.getElementById('btnFinish');
+  const btnSkip = document.getElementById('btnSkip');
+
+  if (confirmed) {
+    btnConfirm.style.display = 'none';
+    btnSkip.style.display = 'none';
+    const allAnswered = QUESTIONS.every(q2 => answers[q2.id]?.confirmed);
+    const hasNext = current < QUESTIONS.length - 1;
+
+    if (fromResults) {
+      btnNext.style.display = 'inline-flex';
+      btnNext.textContent = '← Terug naar resultaten';
+      btnNext.onclick = () => showResults();
+      btnFinish.style.display = 'none';
+    } else if (allAnswered && !hasNext) {
+      btnNext.style.display = 'none';
+      btnFinish.style.display = 'inline-flex';
+    } else {
+      btnNext.style.display = 'inline-flex';
+      btnNext.textContent = 'Volgende →';
+      btnNext.onclick = nextQuestion;
+      btnFinish.style.display = 'none';
+    }
+  } else {
+    btnConfirm.style.display = 'inline-flex';
+    btnSkip.style.display = 'inline-flex';
+    btnNext.style.display = 'none';
+    btnFinish.style.display = 'none';
+    btnConfirm.disabled = !hasValidAnswer(q, ans);
+  }
+}
+
+function hasValidAnswer(q, ans) {
+  if (!ans) return false;
+  if (q.type === 'single' || q.type === 'multi') return ans.selected && ans.selected.size > 0;
+  if (q.type === 'order') return true; // always has an order (default shuffled)
+  if (q.type === 'match') {
+    if (!ans.userMatch) return false;
+    return Object.values(ans.userMatch).some(v => v !== null && v !== '' && v !== undefined);
+  }
+  if (q.type === 'dropdown') {
+    if (!ans.userDropdowns) return false;
+    return Object.values(ans.userDropdowns).some(v => v !== null && v !== '' && v !== undefined);
+  }
+  return false;
+}
+
+// ── Single / Multi ─────────────────────────────────────────────────────────
+function renderSingleMulti(q, ans, confirmed, container, isMulti) {
+  if (isMulti) {
+    const notice = document.createElement('div');
+    notice.className = 'question-label';
+    notice.style.marginBottom = '16px';
+    notice.textContent = '✦ Meerdere antwoorden zijn juist – selecteer er alle.';
+    container.appendChild(notice);
+  }
+
+  const selected = ans.selected || new Set();
+  const displayOrder = optionOrders[q.id];
+  const list = document.createElement('div');
+  list.className = 'options' + (isMulti ? ' multi' : '');
+
+  displayOrder.forEach((origIdx, dispIdx) => {
+    const text = q.options[origIdx];
+    const div = document.createElement('div');
+    div.className = 'option';
+
+    if (confirmed) {
+      div.classList.add('disabled');
+      if (q.correct.includes(origIdx)) {
+        div.classList.add(selected.has(dispIdx) ? 'correct' : 'correct-missed');
+      } else if (selected.has(dispIdx)) {
+        div.classList.add('wrong');
+      }
+    } else if (selected.has(dispIdx)) {
+      div.classList.add('selected');
+    }
+
+    let icon = SVG_CHECK;
+    if (confirmed && selected.has(dispIdx) && !q.correct.includes(origIdx)) icon = SVG_CROSS;
+
+    div.innerHTML = `<div class="option-control">${icon}</div><div class="option-label">${text}</div>`;
+    if (!confirmed) div.addEventListener('click', () => toggleSingleMulti(q, dispIdx, isMulti));
+    list.appendChild(div);
+  });
+  container.appendChild(list);
+}
+
+function toggleSingleMulti(q, dispIdx, isMulti) {
+  if (!answers[q.id]) answers[q.id] = { selected: new Set() };
+  const ans = answers[q.id];
+  if (isMulti) {
+    if (ans.selected.has(dispIdx)) ans.selected.delete(dispIdx);
+    else ans.selected.add(dispIdx);
+  } else {
+    ans.selected = new Set([dispIdx]);
+  }
+  renderQuestion();
+}
+
+// ── Order ──────────────────────────────────────────────────────────────────
+function renderOrder(q, ans, confirmed, container) {
+  const currentOrder = ans.userOrder || orderDisplays[q.id];
+  if (!ans.userOrder) {
+    if (!answers[q.id]) answers[q.id] = {};
+    answers[q.id].userOrder = [...currentOrder];
+  }
+
+  const list = document.createElement('div');
+  list.className = 'order-list';
+  list.id = 'orderList_' + q.id;
+
+  currentOrder.forEach((text, dispIdx) => {
+    const item = document.createElement('div');
+    item.className = 'order-item';
+    item.dataset.dispIdx = dispIdx;
+    item.dataset.text = text;
+
+    if (confirmed) {
+      item.classList.add('disabled');
+      const correctPos = q.items.indexOf(text);
+      const isCorrectPos = correctPos === dispIdx;
+      item.classList.add(isCorrectPos ? 'correct-item' : 'wrong-item');
+    }
+
+    const numEl = document.createElement('div');
+    numEl.className = 'order-num';
+    numEl.textContent = dispIdx + 1;
+    item.appendChild(numEl);
+
+    if (!confirmed) {
+      const handle = document.createElement('div');
+      handle.className = 'order-handle';
+      handle.innerHTML = '⠿';
+      item.appendChild(handle);
+      item.draggable = true;
+      item.addEventListener('dragstart', e => onDragStart(e, dispIdx, q.id));
+      item.addEventListener('dragover', e => onDragOver(e, dispIdx, q.id));
+      item.addEventListener('drop', e => onDrop(e, dispIdx, q.id));
+      item.addEventListener('dragend', e => onDragEnd(e, q.id));
+      // Touch support for iOS
+      item.addEventListener('touchstart', e => onTouchStart(e, dispIdx, q.id), { passive: false });
+      item.addEventListener('touchmove', e => onTouchMove(e, q.id), { passive: false });
+      item.addEventListener('touchend', e => onTouchEnd(e, q.id), { passive: false });
+    }
+
+    const textEl = document.createElement('div');
+    textEl.className = 'order-text';
+    textEl.textContent = text;
+    item.appendChild(textEl);
+
+    if (confirmed) {
+      const correctPos = q.items.indexOf(text);
+      const isCorrectPos = correctPos === dispIdx;
+      if (!isCorrectPos) {
+        const correctLabel = document.createElement('div');
+        correctLabel.className = 'order-wrong-label';
+        correctLabel.textContent = `→ positie ${correctPos + 1}`;
+        item.appendChild(correctLabel);
+      }
+    }
+
+    list.appendChild(item);
+  });
+
+  const hint = document.createElement('p');
+  hint.style.cssText = 'font-size:.82rem;color:var(--muted);margin-top:10px;';
+  hint.textContent = confirmed ? '' : '☰ Sleep de rijen om ze in de juiste volgorde te zetten.';
+  container.appendChild(list);
+  container.appendChild(hint);
+}
+
+function onDragStart(e, idx, qid) {
+  dragSrcIdx = idx;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function onDragOver(e, idx, qid) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.order-item').forEach(el => el.classList.remove('drag-over'));
+  e.currentTarget.classList.add('drag-over');
+}
+function onDrop(e, dropIdx, qid) {
+  e.preventDefault();
+  if (dragSrcIdx === null || dragSrcIdx === dropIdx) return;
+  const q = QUESTIONS.find(q => q.id === qid);
+  if (!answers[qid]) answers[qid] = {};
+  const arr = answers[qid].userOrder || [...orderDisplays[qid]];
+  const moved = arr.splice(dragSrcIdx, 1)[0];
+  arr.splice(dropIdx, 0, moved);
+  answers[qid].userOrder = arr;
+  dragSrcIdx = null;
+  if (!answers[qid].confirmed) {
+    answers[qid].selected = new Set([1]); // mark as touched
+    document.getElementById('btnConfirm').disabled = false;
+  }
+  renderQuestion();
+}
+function onDragEnd(e, qid) {
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.order-item').forEach(el => el.classList.remove('drag-over'));
+  dragSrcIdx = null;
+}
+
+// ── Touch drag for iOS ─────────────────────────────────────────────────────
+let touchGhost = null;
+let touchSrcIdx = null;
+let touchQid = null;
+let touchOffsetX = 0;
+let touchOffsetY = 0;
+
+function onTouchStart(e, dispIdx, qid) {
+  e.preventDefault();
+  const touch = e.touches[0];
+  const rect = e.currentTarget.getBoundingClientRect();
+  touchSrcIdx = dispIdx;
+  touchQid = qid;
+  touchOffsetX = touch.clientX - rect.left;
+  touchOffsetY = touch.clientY - rect.top;
+
+  // Create ghost
+  touchGhost = e.currentTarget.cloneNode(true);
+  touchGhost.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;opacity:0.75;pointer-events:none;z-index:9999;margin:0;box-shadow:0 8px 24px rgba(0,0,0,.2);border-color:var(--orange);`;
+  document.body.appendChild(touchGhost);
+  e.currentTarget.style.opacity = '0.35';
+}
+
+function onTouchMove(e, qid) {
+  e.preventDefault();
+  if (!touchGhost) return;
+  const touch = e.touches[0];
+  touchGhost.style.left = (touch.clientX - touchOffsetX) + 'px';
+  touchGhost.style.top  = (touch.clientY - touchOffsetY) + 'px';
+
+  // Highlight target row
+  document.querySelectorAll('.order-item').forEach(el => el.classList.remove('drag-over'));
+  const el = document.elementFromPoint(touch.clientX, touch.clientY);
+  const item = el?.closest('.order-item');
+  if (item) item.classList.add('drag-over');
+}
+
+function onTouchEnd(e, qid) {
+  e.preventDefault();
+  if (!touchGhost) return;
+  const touch = e.changedTouches[0];
+
+  // Remove ghost and reset opacity
+  document.body.removeChild(touchGhost);
+  touchGhost = null;
+  document.querySelectorAll('.order-item').forEach(el => {
+    el.classList.remove('drag-over');
+    el.style.opacity = '';
+  });
+
+  // Find drop target
+  const el = document.elementFromPoint(touch.clientX, touch.clientY);
+  const targetItem = el?.closest('.order-item');
+  if (!targetItem) return;
+  const dropIdx = parseInt(targetItem.dataset.dispIdx);
+
+  if (touchSrcIdx !== null && touchSrcIdx !== dropIdx) {
+    const q = QUESTIONS.find(q => q.id === qid);
+    if (!answers[qid]) answers[qid] = {};
+    const arr = answers[qid].userOrder || [...orderDisplays[qid]];
+    const moved = arr.splice(touchSrcIdx, 1)[0];
+    arr.splice(dropIdx, 0, moved);
+    answers[qid].userOrder = arr;
+    if (!answers[qid].confirmed) {
+      document.getElementById('btnConfirm').disabled = false;
+    }
+    renderQuestion();
+  }
+
+  touchSrcIdx = null;
+  touchQid = null;
+}
+
+// ── Match ──────────────────────────────────────────────────────────────────
+function renderMatch(q, ans, confirmed, container) {
+  const shuffledRightIdxs = matchOrders[q.id];
+  const shuffledRightItems = shuffledRightIdxs.map(i => q.right[i]);
+
+  if (!ans.userMatch) {
+    if (!answers[q.id]) answers[q.id] = {};
+    answers[q.id].userMatch = {};
+    q.left.forEach((_, i) => { answers[q.id].userMatch[i] = ''; });
+  }
+  const userMatch = ans.userMatch || {};
+
+  const list = document.createElement('div');
+  list.className = 'match-list';
+
+  q.left.forEach((leftItem, leftIdx) => {
+    const row = document.createElement('div');
+    row.className = 'match-row';
+
+    const leftEl = document.createElement('div');
+    leftEl.className = 'match-left';
+    leftEl.textContent = leftItem;
+
+    const arrow = document.createElement('div');
+    arrow.className = 'match-arrow';
+    arrow.textContent = '→';
+
+    const sel = document.createElement('select');
+    sel.className = 'match-select';
+    sel.disabled = confirmed;
+
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Maak je keuze';
+    placeholder.disabled = true;
+    placeholder.selected = !userMatch[leftIdx];
+    sel.appendChild(placeholder);
+
+    shuffledRightItems.forEach(rightText => {
+      const opt = document.createElement('option');
+      opt.value = rightText;
+      opt.textContent = rightText;
+      if (userMatch[leftIdx] === rightText) opt.selected = true;
+      sel.appendChild(opt);
+    });
+
+    if (confirmed) {
+      const correctText = q.right[q.pairs[leftIdx]];
+      const isCorrect = userMatch[leftIdx] === correctText;
+      sel.classList.add(isCorrect ? 'correct' : 'wrong');
+      if (!isCorrect) {
+        // show correct answer
+        const correctHint = document.createElement('div');
+        correctHint.style.cssText = 'font-size:.78rem;color:var(--green);margin-left:4px;';
+        correctHint.textContent = '✓ ' + correctText;
+        row.appendChild(leftEl);
+        row.appendChild(arrow);
+        row.appendChild(sel);
+        row.appendChild(correctHint);
+        list.appendChild(row);
+        return;
+      }
+    } else {
+      sel.addEventListener('change', () => {
+        if (!answers[q.id]) answers[q.id] = { userMatch: {} };
+        if (!answers[q.id].userMatch) answers[q.id].userMatch = {};
+        answers[q.id].userMatch[leftIdx] = sel.value;
+        document.getElementById('btnConfirm').disabled = !hasValidAnswer(q, answers[q.id]);
+      });
+    }
+
+    row.appendChild(leftEl);
+    row.appendChild(arrow);
+    row.appendChild(sel);
+    list.appendChild(row);
+  });
+
+  container.appendChild(list);
+}
+
+// ── Dropdown ───────────────────────────────────────────────────────────────
+function renderDropdown(q, ans, confirmed, container) {
+  const isMultiSentence = q.sentences.length > 1;
+
+  if (!ans.userDropdowns) {
+    if (!answers[q.id]) answers[q.id] = {};
+    answers[q.id].userDropdowns = {};
+    q.sentences.forEach((_, i) => { answers[q.id].userDropdowns[i] = ''; });
+  }
+  const userDD = ans.userDropdowns || {};
+
+  const block = document.createElement('div');
+  if (isMultiSentence) block.className = 'dropdown-block';
+
+  q.sentences.forEach((sent, sIdx) => {
+    const correctText = sent.options[sent.correct];
+    const sentDiv = document.createElement('div');
+    sentDiv.className = isMultiSentence ? 'dropdown-sentence' : '';
+
+    if (sent.label) {
+      const lbl = document.createElement('span');
+      lbl.className = 'dropdown-label';
+      lbl.textContent = sent.label;
+      sentDiv.appendChild(lbl);
+    }
+
+    if (sent.before) {
+      const before = document.createElement('span');
+      before.textContent = sent.before;
+      sentDiv.appendChild(before);
+    }
+
+    // Build shuffled options
+    const shuffledOpts = shuffle([...sent.options]);
+
+    const sel = document.createElement('select');
+    sel.className = 'inline-select';
+    sel.disabled = confirmed;
+
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Maak je keuze';
+    placeholder.disabled = true;
+    placeholder.selected = !userDD[sIdx];
+    sel.appendChild(placeholder);
+
+    shuffledOpts.forEach(optText => {
+      const opt = document.createElement('option');
+      opt.value = optText;
+      opt.textContent = optText;
+      if (userDD[sIdx] === optText) opt.selected = true;
+      sel.appendChild(opt);
+    });
+
+    if (confirmed) {
+      const isCorrect = userDD[sIdx] === correctText;
+      sel.classList.add(isCorrect ? 'correct' : 'wrong');
+    } else {
+      sel.addEventListener('change', () => {
+        if (!answers[q.id]) answers[q.id] = { userDropdowns: {} };
+        if (!answers[q.id].userDropdowns) answers[q.id].userDropdowns = {};
+        answers[q.id].userDropdowns[sIdx] = sel.value;
+        document.getElementById('btnConfirm').disabled = !hasValidAnswer(q, answers[q.id]);
+      });
+    }
+
+    sentDiv.appendChild(sel);
+
+    if (sent.after) {
+      const after = document.createElement('span');
+      after.textContent = sent.after;
+      sentDiv.appendChild(after);
+    }
+
+    if (confirmed && userDD[sIdx] !== correctText) {
+      const hint = document.createElement('span');
+      hint.style.cssText = 'color:var(--green);font-size:.82rem;font-weight:600;margin-left:4px;';
+      hint.textContent = '✓ ' + correctText;
+      sentDiv.appendChild(hint);
+    }
+
+    block.appendChild(sentDiv);
+  });
+
+  container.appendChild(block);
+}
+
+// ─── CONFIRM ─────────────────────────────────────────────────────────────────
+function confirmAnswer() {
+  const q = getQ();
+  if (!answers[q.id]) return;
+  const ans = answers[q.id];
+  let isCorrect = false;
+
+  if (q.type === 'single' || q.type === 'multi') {
+    const displayOrder = optionOrders[q.id];
+    const selectedOriginal = new Set([...ans.selected].map(dispIdx => displayOrder[dispIdx]));
+    const correctSet = new Set(q.correct);
+    isCorrect = correctSet.size === selectedOriginal.size && [...correctSet].every(v => selectedOriginal.has(v));
+  }
+  else if (q.type === 'order') {
+    const userOrder = ans.userOrder || orderDisplays[q.id];
+    isCorrect = userOrder.every((text, i) => text === q.items[i]);
+  }
+  else if (q.type === 'match') {
+    isCorrect = q.left.every((_, leftIdx) => {
+      const correctText = q.right[q.pairs[leftIdx]];
+      return ans.userMatch?.[leftIdx] === correctText;
+    });
+  }
+  else if (q.type === 'dropdown') {
+    isCorrect = q.sentences.every((sent, sIdx) => {
+      return ans.userDropdowns?.[sIdx] === sent.options[sent.correct];
+    });
+  }
+
+  ans.confirmed = true;
+  ans.isCorrect = isCorrect;
+  answers[q.id] = ans;
+
+  renderQuestion();
+  renderNavDots();
+}
+
+// ─── NAVIGATION ──────────────────────────────────────────────────────────────
+function skipQuestion() { nextQuestion(); }
+
+function nextQuestion() {
+  if (current < QUESTIONS.length - 1) {
+    current++;
+    fromResults = false;
+    renderQuestion();
+  }
+}
+
+function goToQuestion(idx) {
+  current = idx;
+  fromResults = false;
+  show('screenQuiz');
+  renderQuestion();
+}
+
+function renderNavDots() {
+  const container = document.getElementById('navDots');
+  container.innerHTML = '';
+  order.forEach((qIdx, i) => {
+    const q = QUESTIONS[qIdx];
+    const ans = answers[q.id];
+    const dot = document.createElement('button');
+    dot.className = 'nav-dot';
+    dot.textContent = i + 1;
+    dot.title = q.text.split('\n')[0].substring(0, 40) + '…';
+    dot.onclick = () => goToQuestion(i);
+    if (i === current) dot.classList.add('current');
+    else if (ans?.confirmed && ans.isCorrect) dot.classList.add('answered-correct');
+    else if (ans?.confirmed && !ans.isCorrect) dot.classList.add('answered-wrong');
+    else if (hasPartialAnswer(q, ans)) dot.classList.add('answered-pending');
+    container.appendChild(dot);
+  });
+}
+
+function hasPartialAnswer(q, ans) {
+  if (!ans) return false;
+  if (q.type === 'single' || q.type === 'multi') return ans.selected?.size > 0;
+  if (q.type === 'order') return !!ans.userOrder;
+  if (q.type === 'match') return ans.userMatch && Object.values(ans.userMatch).some(v => v);
+  if (q.type === 'dropdown') return ans.userDropdowns && Object.values(ans.userDropdowns).some(v => v);
+  return false;
+}
+
+function updateProgress() {
+  const confirmed = QUESTIONS.filter(q => answers[q.id]?.confirmed).length;
+  document.getElementById('progressBar').style.width = (confirmed / QUESTIONS.length * 100) + '%';
+}
+
+// ─── RESULTS ─────────────────────────────────────────────────────────────────
+function showResults() {
+  const correct = QUESTIONS.filter(q => answers[q.id]?.isCorrect).length;
+  const wrong = QUESTIONS.filter(q => answers[q.id]?.confirmed && !answers[q.id].isCorrect).length;
+  const pct = Math.round(correct / QUESTIONS.length * 100);
+
+  document.getElementById('scoreRing').style.setProperty('--pct', pct);
+  document.getElementById('scorePct').textContent = pct + '%';
+  document.getElementById('statCorrect').textContent = correct;
+  document.getElementById('statWrong').textContent = wrong;
+  document.getElementById('statTotal').textContent = QUESTIONS.length;
+  document.getElementById('headerMeta').textContent = `${correct}/${QUESTIONS.length} goed`;
+
+  let title, sub;
+  if (pct === 100) { title = 'Uitstekend! 🎉'; sub = 'Je hebt alle vragen goed beantwoord.'; }
+  else if (pct >= 80) { title = 'Goed gedaan! 👍'; sub = `Je hebt ${correct} van de ${QUESTIONS.length} vragen goed.`; }
+  else if (pct >= 60) { title = 'Aardig resultaat 📚'; sub = `Je hebt ${correct} van de ${QUESTIONS.length} vragen goed.`; }
+  else { title = 'Nog wat studeren…'; sub = `Je hebt ${correct} van de ${QUESTIONS.length} vragen goed.`; }
+
+  document.getElementById('resultsTitle').textContent = title;
+  document.getElementById('resultsSubtitle').textContent = sub;
+
+  const list = document.getElementById('resultsList');
+  list.innerHTML = '';
+  order.forEach((qIdx, i) => {
+    const q = QUESTIONS[qIdx];
+    const ans = answers[q.id];
+    const isCorrect = ans?.isCorrect;
+    const confirmed = ans?.confirmed;
+
+    const item = document.createElement('div');
+    item.className = `result-item ${confirmed ? (isCorrect ? 'correct-result' : 'wrong-result') : ''}`;
+    item.innerHTML = `
+      <div class="result-icon ${confirmed ? (isCorrect ? 'c' : 'w') : ''}">${confirmed ? (isCorrect ? '✓' : '✗') : '–'}</div>
+      <div class="result-content">
+        <div class="result-qnum">${q.lb} · Vraag ${i + 1}</div>
+        <div class="result-qtext">${q.text.split('\n')[0].substring(0, 70)}${q.text.length > 70 ? '…' : ''}</div>
+      </div>
+      <div class="result-arrow">›</div>`;
+    item.onclick = () => {
+      fromResults = true;
+      current = i;
+      show('screenQuiz');
+      renderQuestion();
+    };
+    list.appendChild(item);
+  });
+
+  show('screenResults');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function restartQuiz() { startQuiz(); }
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
